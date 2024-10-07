@@ -1,0 +1,195 @@
+Public Class Form1
+    Dim printedHeader As Boolean = False
+    Const FILL_SPACE = 2
+    Const TIME_LABEL_1 As String = "5-11 AM"
+    Const TIME_LABEL_2 As String = "11-5 PM"
+    Const TIME_LABEL_3 As String = "5-11 PM"
+    Const TIME_LABEL_4 As String = "11-5 AM"
+    Const DAY_HEADING As String = "Day"
+    Dim totalWeeklyMorning As Integer = 0
+    Dim totalWeeklyAfternoon As Integer = 0
+    Dim totalWeeklyEvening As Integer = 0
+    Dim totalWeeklyNight As Integer = 0
+    Dim totalWeeklyCalories As Long = 0
+
+    Private Sub btnAddToSummary_Click(sender As Object, e As EventArgs) Handles btnAddToSummary.Click
+        Dim dayFormat As String = "{0,3}" & Space(FILL_SPACE) &
+                                  "{1,7:N0}" & Space(FILL_SPACE) &
+                                  "{2,7:N0}" & Space(FILL_SPACE) &
+                                  "{3,7:N0}" & Space(FILL_SPACE) &
+                                  "{4,7:N0}"
+        Dim existingIndex As Integer
+        If validateData() Then
+            If Not printedHeader Then
+                lstDailySummary.Items.Add(String.Format(dayFormat,
+                                                        DAY_HEADING,
+                                                        TIME_LABEL_1,
+                                                        TIME_LABEL_2,
+                                                        TIME_LABEL_3,
+                                                        TIME_LABEL_4))
+                printedHeader = True
+            End If
+
+            existingIndex = lstDailySummary.FindString(determineDay)
+            If existingIndex > -1 Then
+
+                lstDailySummary.Items.Item(existingIndex) = String.Format(dayFormat,
+                                                                    determineDay,
+                                                                    CInt(txtMorning.Text),
+                                                                    CInt(txtAfternoon.Text),
+                                                                    CInt(txtEvening.Text),
+                                                                    CInt(txtNight.Text))
+            Else
+                lstDailySummary.Items.Add(String.Format(dayFormat,
+                                     determineDay,
+                                     CInt(txtMorning.Text),
+                                     CInt(txtAfternoon.Text),
+                                     CInt(txtEvening.Text),
+                                     CInt(txtNight.Text)))
+
+
+            End If
+            summarizeWeekClick()
+
+
+        End If
+
+
+
+    End Sub
+
+
+    Private Sub summarizeWeekClick()
+        Dim morning As Integer
+        Dim afternoon As Integer
+        Dim evening As Integer
+        Dim night As Integer
+
+        morning = CInt(txtMorning.Text)
+        afternoon = CInt(txtAfternoon.Text)
+        evening = CInt(txtEvening.Text)
+        night = CInt(txtNight.Text)
+
+        createBarChart(morning, afternoon, evening, night)
+    End Sub
+
+    Sub createBarChart(ByVal firstPeriod As Integer, ByVal secondPeriod As Integer, ByVal thirdPeriod As Integer, fourthPeriod As Integer)
+
+        Dim totalCalories As Long
+        Dim headerFormat As String = "{0,-10}{1,25:N0}{2,25:N0}{3,25:N0}{4,25:N0}"
+        Dim barFormat As String = "{0,-10}{1,-120}"
+
+
+        totalWeeklyMorning += firstPeriod
+        totalWeeklyAfternoon += secondPeriod
+        totalWeeklyEvening += thirdPeriod
+        totalWeeklyNight += fourthPeriod
+
+        totalWeeklyCalories += CLng(totalWeeklyMorning + totalWeeklyAfternoon + totalWeeklyEvening + totalWeeklyNight)
+
+
+        lstWeeklySummary.Items.Clear()
+        lstWeeklySummary.Items.Add(String.Format(headerFormat, "TIME",
+                                           totalWeeklyCalories * 0.25,
+                                           totalWeeklyCalories * 0.5,
+                                           totalWeeklyCalories * 0.75,
+                                           totalWeeklyCalories))
+        lstWeeklySummary.Items.Add(String.Format(barFormat, TIME_LABEL_1, buildBar(totalWeeklyCalories, totalWeeklyMorning)))
+        lstWeeklySummary.Items.Add(String.Format(barFormat, TIME_LABEL_2, buildBar(totalWeeklyCalories, totalWeeklyAfternoon)))
+        lstWeeklySummary.Items.Add(String.Format(barFormat, TIME_LABEL_3, buildBar(totalWeeklyCalories, totalWeeklyEvening)))
+        lstWeeklySummary.Items.Add(String.Format(barFormat, TIME_LABEL_3, buildBar(totalWeeklyCalories, totalWeeklyNight)))
+
+
+    End Sub
+
+    Function buildBar(maxValue As Long, barValue As Long) As String
+        Const NUMBER_COLUMNS = 100
+        Dim bar As String
+        Dim starPercentTotal As Double
+        Dim starCount As Integer
+
+        starPercentTotal = Math.Round(maxValue / NUMBER_COLUMNS, 2)
+        starCount = CInt(barValue / starPercentTotal)
+
+        For i As Integer = 1 To starCount
+            bar &= "*"
+        Next
+        Return bar
+    End Function
+
+
+    Function determineDay() As String
+
+        If rdbSun.Checked Then
+            Return "Sun"
+        ElseIf rdbMon.Checked Then
+            Return "Mon"
+        ElseIf rdbTue.Checked Then
+            Return "Tue"
+        ElseIf rdbWed.Checked Then
+            Return "Wed"
+        ElseIf rdbThu.Checked Then
+            Return "Thu"
+        ElseIf rdbFri.Checked Then
+            Return "Fri"
+        ElseIf rdbSat.Checked Then
+            Return "Sat"
+
+        End If
+
+
+    End Function
+
+    Function validateData() As Boolean
+        ' Check if a day is selected
+        If Not (rdbSun.Checked Or rdbMon.Checked Or rdbTue.Checked Or rdbWed.Checked Or rdbThu.Checked Or rdbFri.Checked Or rdbSat.Checked) Then
+            MessageBox.Show("Please select a day of the week.")
+            Return False ' Exit if no day is selected
+        End If
+
+        ' Check if at least one of the textboxes contains a numeric value and that no non-numeric values are entered
+        If txtMorning.Text.Trim() <> "" Then
+            If Not IsNumeric(txtMorning.Text) OrElse CInt(txtMorning.Text) < 0 Then
+                MessageBox.Show("Please enter a valid number in the 5 AM - 11 AM time frame.")
+                txtMorning.Focus()
+                Return False
+            End If
+        End If
+
+        If txtAfternoon.Text.Trim() <> "" Then
+            If Not IsNumeric(txtAfternoon.Text) OrElse CInt(txtAfternoon.Text) < 0 Then
+                MessageBox.Show("Please enter a valid number in the 5 AM - 11 AM time frame.")
+                txtAfternoon.Focus()
+                Return False
+            End If
+        End If
+
+        If txtEvening.Text.Trim() <> "" Then
+            If Not IsNumeric(txtEvening.Text) OrElse CInt(txtEvening.Text) < 0 Then
+                MessageBox.Show("Please enter a valid number in the 5 AM - 11 AM time frame.")
+                txtEvening.Focus()
+                Return False
+            End If
+        End If
+
+        If txtNight.Text.Trim() <> "" Then
+            If Not IsNumeric(txtNight.Text) OrElse CInt(txtNight.Text) < 0 Then
+                MessageBox.Show("Please enter a valid number in the 5 AM - 11 AM time frame.")
+                txtNight.Focus()
+                Return False
+            End If
+        End If
+
+        ' Ensure at least one field has numeric data
+        If txtMorning.Text.Trim() = "" And txtAfternoon.Text.Trim() = "" And txtEvening.Text.Trim() = "" And txtNight.Text.Trim() = "" Then
+            MessageBox.Show("Please enter a value in at least one time frame.")
+            txtMorning.Focus()
+            Return False
+        End If
+
+        ' If all checks pass, return true
+        Return True
+    End Function
+
+
+End Class
